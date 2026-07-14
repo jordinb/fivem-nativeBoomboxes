@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS `native_boomboxes` (
     `rot_z` FLOAT NOT NULL DEFAULT 0,
     `station` VARCHAR(64) NOT NULL,
     `powered` TINYINT(1) NOT NULL DEFAULT 0,
+    `label` VARCHAR(48) NULL DEFAULT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_native_boombox_owner` (`owner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

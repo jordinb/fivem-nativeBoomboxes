@@ -106,7 +106,7 @@ local function cleanupEditor()
     editorActive = false
 end
 
-function UseBoomboxPlacementEditor(entity)
+function UseBoomboxPlacementEditor(entity, hiddenEntity)
     if editorActive or not DoesEntityExist(entity) then return nil end
     editorActive = true
     outlinedEntity = entity
@@ -130,6 +130,9 @@ function UseBoomboxPlacementEditor(entity)
             for i = 1, #disabledControls do
                 local control = disabledControls[i]
                 DisableControlAction(0, control, true)
+            end
+            if hiddenEntity and DoesEntityExist(hiddenEntity) then
+                SetEntityLocallyInvisible(hiddenEntity)
             end
 
             drawAxes(entity)

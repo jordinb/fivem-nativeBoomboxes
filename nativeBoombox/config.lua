@@ -34,15 +34,54 @@ Config.Validation = {
 }
 
 Config.DefaultStation = 'RADIO_01_CLASS_ROCK'
-Config.AllowAnyoneToControl = true
-Config.AllowAnyoneToPickup = false
 Config.MaximumOwned = 10
+
+Config.Labels = {
+    default = 'Boombox',
+    maximumLength = 48
+}
+
+-- Leave allow empty to make every known station available. Block always wins.
+Config.StationFilter = {
+    allow = {},
+    block = {}
+}
+
+-- Supported modes: everyone, owner, ace, owner_or_ace, disabled.
+Config.Permissions = {
+    adminAce = 'nativeBoombox.admin',
+    adminBypass = true,
+    actions = {
+        control = { mode = 'everyone', ace = 'nativeBoombox.control' },
+        pickup = { mode = 'owner_or_ace', ace = 'nativeBoombox.pickup' },
+        reposition = { mode = 'owner_or_ace', ace = 'nativeBoombox.reposition' },
+        rename = { mode = 'owner_or_ace', ace = 'nativeBoombox.rename' },
+        worldControl = { mode = 'everyone', ace = 'nativeBoombox.worldControl' }
+    },
+    hook = {
+        resource = '',
+        export = ''
+    }
+}
+
+Config.Reposition = {
+    lockTimeout = 90000,
+    maximumDistanceFromPlayer = 8.0,
+    maximumDistanceFromOrigin = 8.0
+}
+
+Config.Audit = {
+    print = false,
+    hook = {
+        resource = '',
+        export = ''
+    }
+}
 
 -- Configure map-authored radios only when their real Rockstar emitter name is known.
 -- These entries use their own fixed emitter and do not consume the portable emitter.
 Config.WorldRadios = {
     -- {
-    --     id = 'mission_row_lobby',
     --     label = 'Mission Row Radio',
     --     coords = vec3(441.15, -981.95, 30.69),
     --     emitter = 'REAL_STATIC_EMITTER_NAME',

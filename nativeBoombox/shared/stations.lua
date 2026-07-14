@@ -1,4 +1,4 @@
-Stations = {
+AllStations = {
     { value = 'RADIO_01_CLASS_ROCK', label = 'Los Santos Rock Radio' },
     { value = 'RADIO_02_POP', label = 'Non-Stop-Pop FM' },
     { value = 'RADIO_03_HIPHOP_NEW', label = 'Radio Los Santos' },
@@ -26,6 +26,28 @@ Stations = {
     { value = 'RADIO_37_MOTOMAMI', label = 'MOTOMAMI Los Santos' }
 }
 
-StationLookup = {}
-for i = 1, #Stations do StationLookup[Stations[i].value] = Stations[i].label end
+AllStationLookup = {}
+for i = 1, #AllStations do AllStationLookup[AllStations[i].value] = AllStations[i].label end
 
+local allowed = {}
+local blocked = {}
+local filter = Config.StationFilter or {}
+local allowList = type(filter.allow) == 'table' and filter.allow or {}
+local blockList = type(filter.block) == 'table' and filter.block or {}
+for i = 1, #allowList do
+    if type(allowList[i]) == 'string' then allowed[allowList[i]] = true end
+end
+for i = 1, #blockList do
+    if type(blockList[i]) == 'string' then blocked[blockList[i]] = true end
+end
+local hasAllowList = next(allowed) ~= nil
+
+Stations = {}
+StationLookup = {}
+for i = 1, #AllStations do
+    local station = AllStations[i]
+    if (not hasAllowList or allowed[station.value]) and not blocked[station.value] then
+        Stations[#Stations + 1] = station
+        StationLookup[station.value] = station.label
+    end
+end

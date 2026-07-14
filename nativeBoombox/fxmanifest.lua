@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Infamous Development Studios / Jordin B.'
 description 'Persistent boomboxes using GTA V native placed-prop radio emitters'
-version '2.2.1'
+version '2.3.0'
 
 lua54 'yes'
 
@@ -23,7 +23,8 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/database.lua',
-    'server/main.lua'
+    'server/main.lua',
+    'version_control.lua'
 }
 
 dependencies {
