@@ -47,7 +47,28 @@ function Database.updateState(box)
     })
 end
 
+function Database.restore(box)
+    return MySQL.update.await([[
+        INSERT INTO `native_boomboxes`
+            (`id`, `owner`, `x`, `y`, `z`, `rot_x`, `rot_y`, `rot_z`, `station`, `powered`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            `owner` = VALUES(`owner`),
+            `x` = VALUES(`x`),
+            `y` = VALUES(`y`),
+            `z` = VALUES(`z`),
+            `rot_x` = VALUES(`rot_x`),
+            `rot_y` = VALUES(`rot_y`),
+            `rot_z` = VALUES(`rot_z`),
+            `station` = VALUES(`station`),
+            `powered` = VALUES(`powered`)
+    ]], {
+        box.id, box.owner, box.x, box.y, box.z,
+        box.rot_x, box.rot_y, box.rot_z,
+        box.station, box.powered and 1 or 0
+    }) > 0
+end
+
 function Database.delete(id)
     return MySQL.update.await('DELETE FROM `native_boomboxes` WHERE `id` = ?', { id }) > 0
 end
-

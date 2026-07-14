@@ -24,6 +24,15 @@ Config.Audio = {
     scanInterval = 500
 }
 
+Config.EntityRecovery = {
+    enabled = true,
+    interval = 15000
+}
+
+Config.Validation = {
+    worldCoordinateLimit = 20000.0
+}
+
 Config.DefaultStation = 'RADIO_01_CLASS_ROCK'
 Config.AllowAnyoneToControl = true
 Config.AllowAnyoneToPickup = false
@@ -38,6 +47,7 @@ Config.WorldRadios = {
     --     coords = vec3(441.15, -981.95, 30.69),
     --     emitter = 'REAL_STATIC_EMITTER_NAME',
     --     defaultStation = 'RADIO_01_CLASS_ROCK',
-    --     powered = true
+    --     powered = true,
+    --     controllable = true
     -- }
 }

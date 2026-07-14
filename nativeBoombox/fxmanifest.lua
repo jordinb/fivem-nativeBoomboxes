@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Infamous Development Studios / Jordin B.'
 description 'Persistent boomboxes using GTA V native placed-prop radio emitters'
-version '2.2.0'
+version '2.2.1'
 
 lua54 'yes'
 

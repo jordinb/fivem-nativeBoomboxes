@@ -64,7 +64,7 @@ local targetOptions = {
 }
 
 local function addWorldZone(box)
-    if worldZones[box.id] then return end
+    if worldZones[box.id] or box.controllable == false then return end
     worldZones[box.id] = exports.ox_target:addSphereZone({
         coords = vec3(box.x, box.y, box.z),
         radius = 0.8,

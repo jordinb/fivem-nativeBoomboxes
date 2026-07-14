@@ -123,7 +123,7 @@ function UseBoomboxPlacementEditor(entity)
     SetEntityDrawOutline(entity, true)
     updateHelp()
 
-    local ok = xpcall(function()
+    local ok, err = xpcall(function()
         while DoesEntityExist(entity) do
             Wait(0)
             DisablePlayerFiring(cache.playerId, true)
@@ -186,10 +186,13 @@ function UseBoomboxPlacementEditor(entity)
                 updateHelp()
             end
         end
-    end, function() return false end)
+    end, debug.traceback)
 
     cleanupEditor()
-    if not ok then return nil end
+    if not ok then
+        if Config.Debug then print(('[nativeBoombox] Placement editor stopped: %s'):format(err)) end
+        return nil
+    end
     return { cancelled = cancelled }
 end
 

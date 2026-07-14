@@ -5,7 +5,7 @@ local sceneActive = false
 local dirty = true
 
 local function stopPortableEmitter()
-    if currentId then SetStaticEmitterEnabled(Config.Audio.emitter, false) end
+    SetStaticEmitterEnabled(Config.Audio.emitter, false)
     if sceneActive then
         StopAudioScene(Config.Audio.scene)
         sceneActive = false
@@ -86,4 +86,3 @@ function StopBoomboxAudio()
         end
     end
 end
-
