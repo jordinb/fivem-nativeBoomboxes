@@ -327,6 +327,11 @@ local function registerInventoryHook()
     hookId = exports.ox_inventory:registerHook('swapItems', cassetteMoveHook, {
         inventoryFilter = { '^' .. stashPrefix }
     })
+
+    AddEventHandler('ox_inventory:closedInventory', function(_, inventoryId)
+        local id = parseStashId(inventoryId)
+        if id then scheduleBoxRefresh(id) end
+    end)
 end
 
 local function registerCallbacks()
