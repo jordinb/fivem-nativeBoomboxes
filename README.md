@@ -71,6 +71,8 @@ Clients use the replicated track position plus native seek support to join an al
 
 The underlying Rockstar source station is an implementation detail used to reach the selected native audio asset. The player-facing channel remains **Mixtape** for the entire time the cassette is inserted.
 
+While a mixtape song is active, nativeBoombox temporarily enables Rockstar's station-level **music-only** mode for that source station. This suppresses ordinary station presentation such as DJ chatter, adverts, and station IDs so the cassette plays the selected song rather than the full radio broadcast. The flag is automatically released when Mixtape mode stops or changes stations.
+
 ## Placement controls
 
 | Control | Action |
