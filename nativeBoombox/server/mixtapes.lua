@@ -277,7 +277,8 @@ local function validateCassetteMove(payload)
         local metadata = item and item.metadata
         if not item or item.name ~= Config.Mixtapes.itemName
             or not metadata or metadata.recorded ~= true
-            or not tonumber(metadata.mixtapeId) then
+            or not tonumber(metadata.mixtapeId)
+            or not loadPlaylist(metadata.mixtapeId) then
             TriggerClientEvent('ox_lib:notify', payload.source, {
                 type = 'error',
                 description = 'Only a recorded mixtape can be inserted into the cassette bay.'
@@ -334,7 +335,7 @@ local function registerCallbacks()
             return false, 'That cassette has already been recorded.'
         end
 
-        local capacityMs = tonumber(metadata.capacityMs) or Config.Mixtapes.capacityMs
+        local capacityMs = Config.Mixtapes.capacityMs
         local validated = {}
         local durationMs = 0
 
@@ -447,13 +448,13 @@ local function playbackWorker()
 
     while true do
         Wait(Config.Mixtapes.advanceInterval)
-        if not context or not context.ready() then goto continue end
-
-        local now = GetGameTimer()
-        local shouldSync = now - lastSync >= Config.Mixtapes.syncInterval
         local anyActive = false
 
-        for _, box in pairs(context.boxes) do
+        if context and context.ready() then
+            local now = GetGameTimer()
+            local shouldSync = now - lastSync >= Config.Mixtapes.syncInterval
+
+            for _, box in pairs(context.boxes) do
             local playback = box.playback
             if box.mode == 'mixtape' and box.powered and playback
                 and not playback.paused and not playback.finished then
@@ -484,12 +485,12 @@ local function playbackWorker()
                     end
                 end
             end
+            end
+
+            if shouldSync then lastSync = now end
         end
 
-        if shouldSync then lastSync = now end
         if not anyActive then Wait(750) end
-
-        ::continue::
     end
 end
 
