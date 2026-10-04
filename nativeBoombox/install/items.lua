@@ -9,3 +9,14 @@
     }
 },
 
+
+['cassette_tape'] = {
+    label = 'Blank Cassette Tape',
+    weight = 50,
+    stack = false,
+    close = true,
+    client = {
+        export = 'nativeBoombox.useCassette'
+    }
+},
+
