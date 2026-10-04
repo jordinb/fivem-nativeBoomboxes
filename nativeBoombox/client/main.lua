@@ -74,14 +74,14 @@ local function openRadio(id, entity)
 
         local stationOptions = {}
 
-        if mixtapeMode then
-            stationOptions[#stationOptions + 1] = {
-                title = 'Mixtape',
-                icon = 'circle-check',
-                description = box.mixtapeLabel or playback and playback.label or 'Recorded Cassette',
-                disabled = true
-            }
-        end
+        stationOptions[#stationOptions + 1] = {
+            title = 'Mixtape',
+            icon = mixtapeMode and 'circle-check' or 'compact-disc',
+            description = mixtapeMode
+                and (box.mixtapeLabel or playback and playback.label or 'Recorded Cassette')
+                or 'Insert a recorded cassette into the cassette bay.',
+            disabled = true
+        }
 
         for i = 1, #Stations do
             local station = Stations[i]
