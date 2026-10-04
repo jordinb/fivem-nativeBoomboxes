@@ -1,4 +1,4 @@
-# nativeBoombox 2.3.1
+# nativeBoombox 2.4.0
 
 A clean rebuild of the persistent FiveM boombox resource using GTA V's native placed-prop radio emitter. It does not create hidden vehicles, play URLs, or use browser audio.
 
@@ -25,6 +25,12 @@ ensure ox_target
 ensure nativeBoombox
 ```
 
+### Upgrading from 2.3.1
+
+2.4.0 adds native GTA V mixtapes. Add the new `cassette_tape` item from `nativeBoombox/install/items.lua`, replace the resource files, and restart the resource. The mixtape tables are created automatically; the bundled SQL file contains the same schema for manual installation.
+
+Existing boombox rows require no destructive migration. Existing station, power, label, ownership, and transform data are preserved.
+
 ### Upgrading from 2.3.0
 
 2.3.1 is a drop-in client hardening update. It requires no SQL or configuration changes. Portable audio now skips out-of-scope network IDs before entity resolution, validates the replicated boombox ID before attaching the emitter, and avoids network lookups for boomboxes outside the configured audio radius.
@@ -38,6 +44,32 @@ Replace the resource files and merge the new configuration sections. The legacy 
 GTA's freemode scripts link `SE_Script_Placed_Prop_Emitter_Boombox` to placed `prop_boombox_01` entities with `LINK_STATIC_EMITTER_TO_ENTITY`. This resource follows that base-game implementation and retunes it with `SET_EMITTER_RADIO_STATION`.
 
 The game exposes one named script-placed boombox emitter. Consequently, each client hears the nearest powered portable boombox inside `Config.Audio.distance`. Different players may hear different nearby boomboxes. Map-authored radios use their own configured emitter names and are independent.
+
+
+## Mixtapes
+
+2.4.0 adds physical cassette tapes built entirely from GTA V's native radio audio. No music files, URLs, or browser audio are streamed by this resource.
+
+- Use a blank `cassette_tape` to open the recorder.
+- Name the mixtape, browse songs by radio station, search the station catalog, and build an ordered playlist.
+- The default cassette capacity is 60 minutes with a configurable 30-track limit.
+- Recording converts the same inventory item from blank to recorded metadata; it does not remove and recreate the tape.
+- Recorded tapes are inserted into a persistent one-slot cassette bay on placed boomboxes.
+- While a cassette is inserted, the control menu displays **Station/Channel: Mixtape** and normal station selection is unavailable.
+- Previous, next, and restart controls are server-authorized.
+- When the final track ends, the portable emitter is explicitly disabled. The boombox remains on the Mixtape channel and does not fall back to ordinary station programming.
+- Ejecting the cassette returns the boombox to its previously selected normal radio station.
+- Boombox pickup and administrative deletion are blocked until an inserted cassette is ejected.
+
+The bundled generated track catalog currently contains 893 selectable music entries across 23 GTA V music stations. Commercials, station idents, DJ-only segments, and talk-radio content are excluded. Catalog entries reference only Rockstar audio identifiers already present in the game.
+
+### Mixtape synchronization
+
+The server owns playlist order, track index, timing, and controls. Detailed playback state is replicated on the boombox entity state bag, so OneSync only sends it to clients that have that entity in scope. There is no per-track broadcast to every connected player.
+
+Clients use the replicated track position plus native seek support to join an already-playing song at the correct point. The server advances only actively playing mixtapes; idle placed boomboxes are not scanned by the mixtape scheduler.
+
+The underlying Rockstar source station is an implementation detail used to reach the selected native audio asset. The player-facing channel remains **Mixtape** for the entire time the cassette is inserted.
 
 ## Placement controls
 
@@ -59,6 +91,7 @@ Move and Rotate remember their own selected axes during a placement session. Rot
 
 ## Configuration
 
+- `Config.Mixtapes` controls cassette item name, capacity, maximum tracks, game-build filtering, scheduler interval, transition guard, and scoped synchronization interval.
 - `Config.Permissions.actions` independently controls playback, pickup, repositioning, renaming, and world-radio access.
 - Supported permission modes are `everyone`, `owner`, `ace`, `owner_or_ace`, and `disabled`.
 - `Config.Permissions.hook` can delegate the final decision to another server resource without adding a framework dependency.
@@ -102,6 +135,8 @@ One target option opens a server-authorized menu. Depending on access, it can co
 - Missing persistent entities are recreated automatically without requiring a resource restart.
 - A placement saved during a temporary entity creation failure remains persisted and is recovered by the watchdog.
 - Reposition sessions use a timed server edit lock with client keepalive and server-side final-transform validation.
+- Cassette bay contents persist through ox_inventory. A resource restart retains the inserted tape; active playback restarts from the beginning of that mixtape after initialization.
+- Mixtape definitions and ordered track references persist in normalized MySQL tables while inventory metadata stores only the tape identity and display summary.
 
 ## Safety
 
@@ -114,4 +149,6 @@ One target option opens a server-authorized menu. Depending on access, it can co
 - Reposition fallback resolution uses the same network-scope and state-bag identity checks, preventing stale or reused network IDs from targeting unrelated entities.
 - A failed audio worker stops and reports once. It cannot flood F8 in a retry loop.
 - Server error reporting is rate-limited by failure scope.
-- Placement, pickup, control, rename, reposition, deletion, and recovery emit server audit events.
+- Mixtape creation revalidates every submitted track ID, build requirement, playlist length, total runtime, inventory slot, and blank-tape state server-side.
+- Cassette-bay moves are validated server-side for proximity, control permission, recorded-tape identity, and an existing playlist.
+- Placement, pickup, control, rename, reposition, deletion, recovery, cassette insertion/ejection, and mixtape controls emit server audit events.
