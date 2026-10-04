@@ -478,8 +478,9 @@ local function playbackWorker()
                     else
                         local position = currentPosition(playback)
 
-                        while track and position >= track.durationMs do
-                            position = position - track.durationMs
+                        local transitionAt = math.max(1, track.durationMs - Config.Mixtapes.transitionLeadMs)
+                        while track and position >= transitionAt do
+                            position = math.max(0, position - track.durationMs)
                             local nextIndex = playback.index + 1
 
                             if nextIndex > #playlist.tracks then
@@ -492,6 +493,9 @@ local function playbackWorker()
                             playback = box.playback
                             track = playlist.tracks[nextIndex]
                             position = currentPosition(playback)
+                            if track then
+                                transitionAt = math.max(1, track.durationMs - Config.Mixtapes.transitionLeadMs)
+                            end
                         end
 
                         if track and shouldSync then
