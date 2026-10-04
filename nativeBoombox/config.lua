@@ -36,6 +36,18 @@ Config.Validation = {
 Config.DefaultStation = 'RADIO_01_CLASS_ROCK'
 Config.MaximumOwned = 10
 
+Config.Mixtapes = {
+    enabled = true,
+    itemName = 'cassette_tape',
+    capacityMs = 60 * 60 * 1000,
+    maximumTracks = 30,
+    titleMaximumLength = 48,
+    cassetteBayMaxWeight = 500,
+    gameBuild = 0, -- 0 = use sv_enforceGameBuild when configured.
+    advanceInterval = 250,
+    syncInterval = 15000
+}
+
 Config.Labels = {
     default = 'Boombox',
     maximumLength = 48
