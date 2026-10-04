@@ -62,7 +62,7 @@ local function openRadio(id, entity)
         }
         if box.mode == 'mixtape' then
             options[#options + 1] = {
-                title = 'Channel: Mixtape',
+                title = 'Station/Channel: Mixtape',
                 icon = 'compact-disc',
                 description = box.mixtapeLabel or 'Recorded Cassette',
                 disabled = true
@@ -93,7 +93,7 @@ local function openRadio(id, entity)
             }
         else
             options[#options + 1] = {
-                title = 'Channel',
+                title = 'Station/Channel',
                 icon = 'radio',
                 description = StationLookup[box.station] or box.station,
                 menu = stationContextId
@@ -122,7 +122,7 @@ local function openRadio(id, entity)
         if Config.Mixtapes.enabled and box.kind == 'placed' then
             options[#options + 1] = {
                 title = 'Cassette Bay',
-                icon = 'cassette-tape',
+                icon = 'compact-disc',
                 description = box.mode == 'mixtape'
                     and ('Inserted: %s'):format(box.mixtapeLabel or 'Mixtape')
                     or 'Insert a recorded mixtape',
