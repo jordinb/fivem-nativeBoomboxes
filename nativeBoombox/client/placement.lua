@@ -93,6 +93,11 @@ function BeginBoomboxPlacement(slotId)
     }, slotId)
 end
 
+exports('useBoombox', function(data, slot)
+    local slotId = type(slot) == 'table' and slot.slot or slot
+    BeginBoomboxPlacement(slotId)
+end)
+
 function BeginBoomboxReposition(id, originalEntity)
     if placing then return end
     placing = true
