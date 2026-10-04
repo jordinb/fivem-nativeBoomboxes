@@ -2,6 +2,7 @@ Mixtapes = {}
 
 local context
 local playlistCache = {}
+local activePlayback = {}
 local hookId
 local stashPrefix = 'nativeBoombox_cassette_'
 local revision = 0
@@ -141,6 +142,7 @@ local function setFinished(box)
     playback.offsetMs = 0
     playback.revision = nextRevision()
     box.playback = playback
+    activePlayback[box.id] = nil
     Mixtapes.syncBoxEntity(box)
 end
 
@@ -164,6 +166,9 @@ local function startTrack(box, index, positionMs)
 
     if box.playback.paused then
         box.playback.startedAtGame = nil
+        activePlayback[box.id] = nil
+    else
+        activePlayback[box.id] = box
     end
 
     Mixtapes.syncBoxEntity(box)
@@ -179,6 +184,7 @@ function Mixtapes.onPowerChanged(box, powered)
     end
 
     if playback.finished then
+        activePlayback[box.id] = nil
         Mixtapes.syncBoxEntity(box)
         return
     end
@@ -188,11 +194,13 @@ function Mixtapes.onPowerChanged(box, powered)
         playback.startedAtGame = GetGameTimer()
         playback.startedAtUnix = os.time()
         playback.revision = nextRevision()
+        activePlayback[box.id] = box
     elseif not powered and not playback.paused then
         playback.offsetMs = currentPosition(playback)
         playback.paused = true
         playback.startedAtGame = nil
         playback.revision = nextRevision()
+        activePlayback[box.id] = nil
     end
 
     Mixtapes.syncBoxEntity(box)
@@ -249,6 +257,7 @@ function Mixtapes.refreshBox(box, silent)
         box.mixtapeId = nil
         box.mixtapeLabel = nil
         box.playback = nil
+        activePlayback[box.id] = nil
         Mixtapes.syncBoxEntity(box)
     end
 
@@ -447,50 +456,53 @@ local function playbackWorker()
     local lastSync = 0
 
     while true do
-        Wait(Config.Mixtapes.advanceInterval)
-        local anyActive = false
+        local hasActive = next(activePlayback) ~= nil
+        Wait(hasActive and Config.Mixtapes.advanceInterval or 1000)
 
-        if context and context.ready() then
+        if context and context.ready() and hasActive then
             local now = GetGameTimer()
             local shouldSync = now - lastSync >= Config.Mixtapes.syncInterval
 
-            for _, box in pairs(context.boxes) do
-            local playback = box.playback
-            if box.mode == 'mixtape' and box.powered and playback
-                and not playback.paused and not playback.finished then
-                anyActive = true
+            for id, box in pairs(activePlayback) do
+                local playback = box.playback
 
-                local playlist = loadPlaylist(playback.mixtapeId)
-                local track = playlist and playlist.tracks[playback.index]
-                if not track then
-                    setFinished(box)
+                if context.boxes[id] ~= box or box.mode ~= 'mixtape' or not box.powered
+                    or not playback or playback.paused or playback.finished then
+                    activePlayback[id] = nil
                 else
-                    local position = currentPosition(playback)
-                    while track and position >= track.durationMs do
-                        position = position - track.durationMs
-                        local nextIndex = playback.index + 1
-                        if nextIndex > #playlist.tracks then
-                            setFinished(box)
-                            track = nil
-                            break
-                        end
-                        startTrack(box, nextIndex, position)
-                        playback = box.playback
-                        track = playlist.tracks[nextIndex]
-                        position = currentPosition(playback)
-                    end
+                    local playlist = loadPlaylist(playback.mixtapeId)
+                    local track = playlist and playlist.tracks[playback.index]
 
-                    if track and shouldSync then
-                        Mixtapes.syncBoxEntity(box)
+                    if not track then
+                        setFinished(box)
+                    else
+                        local position = currentPosition(playback)
+
+                        while track and position >= track.durationMs do
+                            position = position - track.durationMs
+                            local nextIndex = playback.index + 1
+
+                            if nextIndex > #playlist.tracks then
+                                setFinished(box)
+                                track = nil
+                                break
+                            end
+
+                            startTrack(box, nextIndex, position)
+                            playback = box.playback
+                            track = playlist.tracks[nextIndex]
+                            position = currentPosition(playback)
+                        end
+
+                        if track and shouldSync then
+                            Mixtapes.syncBoxEntity(box)
+                        end
                     end
                 end
-            end
             end
 
             if shouldSync then lastSync = now end
         end
-
-        if not anyActive then Wait(750) end
     end
 end
 
