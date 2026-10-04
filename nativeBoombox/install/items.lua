@@ -1,4 +1,4 @@
--- Add inside ox_inventory/data/items.lua. /// If boombox already exists, just add the export line to the client table.
+-- Add these entries inside ox_inventory/data/items.lua. If boombox already exists, merge the export into its existing client table.
 ['boombox'] = {
     label = 'Boombox',
     weight = 500,
