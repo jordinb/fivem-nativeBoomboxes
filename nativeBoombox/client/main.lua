@@ -60,31 +60,75 @@ local function openRadio(id, entity)
                 end
             end
         }
-        options[#options + 1] = {
-            title = 'Select Station',
-            icon = 'radio',
-            description = StationLookup[box.station] or box.station,
-            menu = stationContextId
-        }
-        local stationOptions = {}
-        for i = 1, #Stations do
-            local station = Stations[i]
-            local stationValue = station.value
-            stationOptions[#stationOptions + 1] = {
-                title = station.label,
-                icon = box.station == stationValue and 'circle-check' or 'radio',
-                disabled = box.station == stationValue,
+        if box.mode == 'mixtape' then
+            options[#options + 1] = {
+                title = 'Channel: Mixtape',
+                icon = 'compact-disc',
+                description = box.mixtapeLabel or 'Recorded Cassette',
+                disabled = true
+            }
+            options[#options + 1] = {
+                title = 'Previous Track',
+                icon = 'backward-step',
+                description = 'Restart the current track or go to the previous track.',
                 onSelect = function()
-                    TriggerServerEvent('nativeBoombox:server:setState', id, 'station', stationValue)
+                    TriggerServerEvent('nativeBoombox:server:mixtapeControl', id, 'previous')
                 end
             }
+            options[#options + 1] = {
+                title = 'Next Track',
+                icon = 'forward-step',
+                description = 'Advance to the next track on the mixtape.',
+                onSelect = function()
+                    TriggerServerEvent('nativeBoombox:server:mixtapeControl', id, 'next')
+                end
+            }
+            options[#options + 1] = {
+                title = 'Restart Mixtape',
+                icon = 'rotate-left',
+                description = 'Rewind the cassette and begin again from track one.',
+                onSelect = function()
+                    TriggerServerEvent('nativeBoombox:server:mixtapeControl', id, 'restart')
+                end
+            }
+        else
+            options[#options + 1] = {
+                title = 'Channel',
+                icon = 'radio',
+                description = StationLookup[box.station] or box.station,
+                menu = stationContextId
+            }
+            local stationOptions = {}
+            for i = 1, #Stations do
+                local station = Stations[i]
+                local stationValue = station.value
+                stationOptions[#stationOptions + 1] = {
+                    title = station.label,
+                    icon = box.station == stationValue and 'circle-check' or 'radio',
+                    disabled = box.station == stationValue,
+                    onSelect = function()
+                        TriggerServerEvent('nativeBoombox:server:setState', id, 'station', stationValue)
+                    end
+                }
+            end
+            lib.registerContext({
+                id = stationContextId,
+                title = 'Select Station',
+                menu = contextId,
+                options = stationOptions
+            })
         end
-        lib.registerContext({
-            id = stationContextId,
-            title = 'Select Station',
-            menu = contextId,
-            options = stationOptions
-        })
+
+        if Config.Mixtapes.enabled and box.kind == 'placed' then
+            options[#options + 1] = {
+                title = 'Cassette Bay',
+                icon = 'cassette-tape',
+                description = box.mode == 'mixtape'
+                    and ('Inserted: %s'):format(box.mixtapeLabel or 'Mixtape')
+                    or 'Insert a recorded mixtape',
+                onSelect = function() OpenBoomboxCassetteBay(id) end
+            }
+        end
     end
 
     if access.reposition then
@@ -138,11 +182,12 @@ local function openRadio(id, entity)
                     header = 'Boombox Details',
                     content = ('ID: `%s`  \nKind: `%s`  \nOwner: `%s`  \nNetwork ID: `%s`  \n' ..
                         'Position: `%.3f, %.3f, %.3f`  \nRotation: `%.2f, %.2f, %.2f`  \n' ..
-                        'Station: `%s`  \nPowered: `%s`'):format(
+                        'Channel: `%s`  \nPowered: `%s`'):format(
                         details.id, details.kind, details.owner or 'world', details.netId or 'none',
                         details.x, details.y, details.z,
                         details.rot_x or 0.0, details.rot_y or 0.0, details.rot_z or 0.0,
-                        details.station, details.powered and 'yes' or 'no'),
+                        details.mode == 'mixtape' and 'Mixtape' or details.station,
+                        details.powered and 'yes' or 'no'),
                     centered = true
                 })
             end
@@ -221,11 +266,6 @@ end)
 RegisterNetEvent('nativeBoombox:client:remove', function(id)
     boxes[id] = nil
     if worldZones[id] then exports.ox_target:removeZone(worldZones[id]) worldZones[id] = nil end
-end)
-
-exports('useBoombox', function(data, slot)
-    local slotId = type(slot) == 'table' and slot.slot or slot
-    BeginBoomboxPlacement(slotId)
 end)
 
 CreateThread(function()
