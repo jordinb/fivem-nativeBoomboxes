@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.4.0
+
+### Added
+
+- Native GTA V mixtapes recorded onto a physical, tradeable `cassette_tape` inventory item.
+- Generated 893-entry music catalog spanning 23 GTA V music stations while excluding adverts, idents, DJ-only segments, and talk-radio content.
+- Searchable ox_lib mixtape recorder with title entry, station browsing, ordered playlists, runtime capacity, editing, and final recording confirmation.
+- Persistent one-slot ox_inventory cassette bay for each placed boombox.
+- Server-authoritative mixtape definitions and ordered track persistence in normalized MySQL tables.
+- Previous, next, and restart controls for inserted mixtapes.
+- Scoped `nativeBoomboxPlayback` entity state for track index, source audio, timing, pause state, and revision.
+- Build-aware track filtering using `Config.Mixtapes.gameBuild` or `sv_enforceGameBuild`.
+- Player-facing **Station/Channel: Mixtape** mode with scoped Now Playing / End of Mixtape status.
+
+### Changed
+
+- Portable audio now supports both normal radio and native exact-track mixtape playback.
+- The mixtape scheduler tracks only actively playing boomboxes; idle placed boomboxes incur no per-tick mixtape scan.
+- Recording updates the existing cassette item's metadata instead of removing and recreating the inventory item.
+- Boombox pickup and administrative deletion require the cassette bay to be empty.
+
+### Safety
+
+- Mixtape playlists are validated server-side against the bundled catalog, configured build, capacity, track limit, inventory slot, and blank-tape state.
+- Cassette-bay inventory moves require server-side proximity and boombox control permission.
+- Inserted cassette IDs must resolve to an existing server-side mixtape before the move is accepted.
+- Normal station changes are rejected while a mixtape is inserted.
+- End-of-tape playback explicitly disables the portable emitter before Rockstar radio scheduling can continue into ordinary station audio.
+
 ## 2.3.1
 
 ### Fixed
