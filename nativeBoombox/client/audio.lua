@@ -5,6 +5,7 @@ local currentMode
 local currentRevision
 local currentAudioId
 local musicOnlyStation
+local debugBusOverride
 local sceneActive = false
 local dirty = true
 
@@ -190,19 +191,109 @@ end
 
 local function audioLoop()
     while true do
-        local id, entity = nearestPortable()
-        if not id then
-            stopPortableEmitter()
-        else
-            local box = boxes[id]
-            if box.mode == 'mixtape' then
-                applyMixtape(id, entity, box)
+        if not debugBusOverride then
+            local id, entity = nearestPortable()
+            if not id then
+                stopPortableEmitter()
             else
-                applyRadio(id, entity, box)
+                local box = boxes[id]
+                if box.mode == 'mixtape' then
+                    applyMixtape(id, entity, box)
+                else
+                    applyRadio(id, entity, box)
+                end
             end
         end
         Wait(Config.Audio.scanInterval)
     end
+end
+
+if Config.Debug then
+    local TEST_TRACK_LIST = 'radio_02_pop_music'
+    local TEST_TRACK_OFFSET_MS = 887798 -- Gimme More: list offset 887561 + song marker 237.
+    local TEST_AUDIO_ID = 'radio_02_pop_gimme_more'
+    local MEDIA_PLAYER_BUS = 'RADIO_36_AUDIOPLAYER'
+    local HIDDEN_TEST_BUS = 'HIDDEN_RADIO_ASTU_SILENCE'
+
+    local function startBusTest(bus)
+        local id, entity = nearestPortable()
+        if not id or not entity then
+            return print('^1[nativeBoombox bus test]^7 No streamed powered boombox is in audio range.')
+        end
+
+        debugBusOverride = {
+            id = id,
+            entity = entity,
+            bus = bus,
+            trackList = TEST_TRACK_LIST
+        }
+
+        SetStaticEmitterEnabled(Config.Audio.emitter, false)
+        clearMusicOnly()
+        ensureScene()
+
+        UnlockRadioStationTrackList(bus, TEST_TRACK_LIST)
+        SetRadioStationMusicOnly(bus, true)
+        Citizen.InvokeNative(0x4E0AF9114608257C, bus, TEST_TRACK_LIST, TEST_TRACK_OFFSET_MS)
+
+        Citizen.InvokeNative(0x651D3228960D08AF, Config.Audio.emitter, entity)
+        SetEmitterRadioStation(Config.Audio.emitter, bus)
+        SetStaticEmitterEnabled(Config.Audio.emitter, true)
+
+        print(('^2[nativeBoombox bus test]^7 Playing Gimme More through %s on boombox %s.'):format(bus, id))
+        print('^3[nativeBoombox bus test]^7 Verify Non-Stop-Pop FM elsewhere remains on its normal live program.')
+    end
+
+    RegisterCommand('nbmixbus', function(_, args)
+        local action = args[1] and args[1]:lower() or 'help'
+
+        if action == 'media' then
+            startBusTest(MEDIA_PLAYER_BUS)
+            return
+        end
+
+        if action == 'hidden' then
+            startBusTest(HIDDEN_TEST_BUS)
+            return
+        end
+
+        if action == 'status' then
+            if not debugBusOverride then
+                return print('^3[nativeBoombox bus test]^7 No isolated bus test is active.')
+            end
+
+            local bus = debugBusOverride.bus
+            print(('^5[nativeBoombox bus test]^7 bus=%s playback=%s actualHash=%s expectedHash=%s match=%s')
+                :format(
+                    bus,
+                    tostring(GetCurrentRadioTrackPlaybackTime(bus)),
+                    tostring(GetCurrentTrackSoundName(bus)),
+                    tostring(GetHashKey(TEST_AUDIO_ID)),
+                    tostring(GetCurrentTrackSoundName(bus) == GetHashKey(TEST_AUDIO_ID))
+                ))
+            return
+        end
+
+        if action == 'stop' then
+            if debugBusOverride then
+                local bus = debugBusOverride.bus
+                SetStaticEmitterEnabled(Config.Audio.emitter, false)
+                SetRadioStationMusicOnly(bus, false)
+                LockRadioStationTrackList(bus, TEST_TRACK_LIST)
+                debugBusOverride = nil
+                dirty = true
+                clearCurrent()
+                print('^2[nativeBoombox bus test]^7 Isolated bus test stopped; normal boombox audio will resume.')
+            end
+            return
+        end
+
+        print('^5[nativeBoombox bus test]^7 Commands:')
+        print('  /nbmixbus media  - test Rockstar Media Player as an isolated backend')
+        print('  /nbmixbus hidden - test a non-wheel hidden station as an isolated backend')
+        print('  /nbmixbus status - inspect current backend track state')
+        print('  /nbmixbus stop   - restore normal boombox audio')
+    end, false)
 end
 
 function InitialiseBoomboxAudio(sharedBoxes)
