@@ -223,11 +223,6 @@ RegisterNetEvent('nativeBoombox:client:remove', function(id)
     if worldZones[id] then exports.ox_target:removeZone(worldZones[id]) worldZones[id] = nil end
 end)
 
-exports('useBoombox', function(data, slot)
-    local slotId = type(slot) == 'table' and slot.slot or slot
-    BeginBoomboxPlacement(slotId)
-end)
-
 CreateThread(function()
     exports.ox_target:addModel(Config.PropModel, targetOptions)
     local stateOk, state = pcall(lib.callback.await, 'nativeBoombox:server:getState', false)
