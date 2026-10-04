@@ -156,8 +156,31 @@ local function validateConfig()
         requireNumber(Config.Mixtapes.maximumTracks, 'Config.Mixtapes.maximumTracks', 1)
         requireNumber(Config.Mixtapes.titleMaximumLength, 'Config.Mixtapes.titleMaximumLength', 1)
         requireNumber(Config.Mixtapes.cassetteBayMaxWeight, 'Config.Mixtapes.cassetteBayMaxWeight', 1)
+        requireNumber(Config.Mixtapes.gameBuild, 'Config.Mixtapes.gameBuild', 0)
         requireNumber(Config.Mixtapes.advanceInterval, 'Config.Mixtapes.advanceInterval', 100)
+        requireNumber(Config.Mixtapes.transitionLeadMs, 'Config.Mixtapes.transitionLeadMs', 0)
         requireNumber(Config.Mixtapes.syncInterval, 'Config.Mixtapes.syncInterval', 1000)
+
+        if tonumber(Config.Mixtapes.titleMaximumLength) > 48 then
+            problems[#problems + 1] = 'Config.Mixtapes.titleMaximumLength cannot exceed the database limit of 48'
+        end
+        if tonumber(Config.Mixtapes.maximumTracks) % 1 ~= 0 then
+            problems[#problems + 1] = 'Config.Mixtapes.maximumTracks must be an integer'
+        end
+        if type(MixtapeTracks) ~= 'table' or #MixtapeTracks == 0 then
+            problems[#problems + 1] = 'Mixtape track catalog is empty or failed to load'
+        else
+            for i = 1, #MixtapeTracks do
+                local track = MixtapeTracks[i]
+                if type(track.id) ~= 'string' or track.id == ''
+                    or type(track.audioId) ~= 'string' or track.audioId == ''
+                    or not AllStationLookup[track.station]
+                    or not finiteNumber(track.durationMs) or track.durationMs <= 0 then
+                    problems[#problems + 1] = ('Mixtape track catalog entry %s is invalid'):format(i)
+                    break
+                end
+            end
+        end
     end
 
     if type(Config.StationFilter) ~= 'table' or type(Config.StationFilter.allow) ~= 'table'
