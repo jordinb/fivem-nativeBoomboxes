@@ -4,6 +4,7 @@ local currentStation
 local currentMode
 local currentRevision
 local currentAudioId
+local musicOnlyStation
 local sceneActive = false
 local dirty = true
 
@@ -11,6 +12,21 @@ local function ensureScene()
     if sceneActive then return end
     StartAudioScene(Config.Audio.scene)
     sceneActive = true
+end
+
+local function clearMusicOnly()
+    if musicOnlyStation then
+        SetRadioStationMusicOnly(musicOnlyStation, false)
+        musicOnlyStation = nil
+    end
+end
+
+local function setMusicOnly(station)
+    if musicOnlyStation == station then return end
+
+    clearMusicOnly()
+    SetRadioStationMusicOnly(station, true)
+    musicOnlyStation = station
 end
 
 local function clearCurrent()
@@ -23,6 +39,7 @@ end
 
 local function stopPortableEmitter()
     SetStaticEmitterEnabled(Config.Audio.emitter, false)
+    clearMusicOnly()
     if sceneActive then
         StopAudioScene(Config.Audio.scene)
         sceneActive = false
@@ -81,6 +98,8 @@ local function linkEmitter(entity, station)
 end
 
 local function applyRadio(id, entity, box)
+    clearMusicOnly()
+
     if dirty or currentId ~= id or currentMode ~= 'radio' or currentStation ~= box.station then
         linkEmitter(entity, box.station)
         SetStaticEmitterEnabled(Config.Audio.emitter, true)
@@ -119,6 +138,7 @@ local function applyMixtape(id, entity, box)
 
     if type(state) ~= 'table' or state.mode ~= 'mixtape'
         or state.finished or state.waiting or not state.station or not state.audioId then
+        clearMusicOnly()
         if dirty or currentId ~= id or currentMode ~= 'mixtape_silent' then
             SetStaticEmitterEnabled(Config.Audio.emitter, false)
             currentId = id
@@ -134,6 +154,7 @@ local function applyMixtape(id, entity, box)
     local revision = tonumber(state.revision) or 0
     if dirty or currentId ~= id or currentMode ~= 'mixtape'
         or currentRevision ~= revision or currentAudioId ~= state.audioId then
+        setMusicOnly(state.station)
         linkEmitter(entity, state.station)
         SetStaticEmitterEnabled(Config.Audio.emitter, true)
 
@@ -147,6 +168,7 @@ local function applyMixtape(id, entity, box)
         )
         UnfreezeRadioStation(state.station)
         SetRadioAutoUnfreeze(true)
+        SetRadioStationMusicOnly(state.station, true)
 
         currentId = id
         currentStation = state.station
