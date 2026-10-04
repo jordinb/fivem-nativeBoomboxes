@@ -45,6 +45,7 @@ Config.Mixtapes = {
     cassetteBayMaxWeight = 500,
     gameBuild = 0, -- 0 = use sv_enforceGameBuild when configured.
     advanceInterval = 250,
+    transitionLeadMs = 100,
     syncInterval = 15000
 }
 
