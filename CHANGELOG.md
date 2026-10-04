@@ -21,6 +21,12 @@
 - Recording updates the existing cassette item's metadata instead of removing and recreating the inventory item.
 - Boombox pickup and administrative deletion require the cassette bay to be empty.
 
+### Fixed
+
+- Added the virtual **Mixtape** channel to the Station/Channel submenu whenever a recorded cassette is inserted.
+- Normal Rockstar stations remain visible but disabled while Mixtape mode is active, making the active channel unambiguous without treating Mixtape as a real Rockstar radio station.
+- The boombox menu can recognize Mixtape mode from the scoped playback state bag during a client state-update race after cassette insertion.
+
 ### Safety
 
 - Mixtape playlists are validated server-side against the bundled catalog, configured build, capacity, track limit, inventory slot, and blank-tape state.
