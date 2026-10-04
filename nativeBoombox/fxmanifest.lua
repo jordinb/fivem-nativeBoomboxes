@@ -17,6 +17,7 @@ client_scripts {
     'client/placement_editor.lua',
     'client/placement.lua',
     'client/audio.lua',
+    'client/mixtape_poc.lua',
     'client/main.lua'
 }
 
