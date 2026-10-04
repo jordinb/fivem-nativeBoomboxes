@@ -20,20 +20,41 @@ local function applyWorldEmitter(box)
     SetStaticEmitterEnabled(box.emitter, box.powered)
 end
 
+local function resolvePortableEntity(id, netId)
+    if type(netId) ~= 'number' or netId <= 0 then return end
+    if not NetworkDoesEntityExistWithNetworkId(netId) then return end
+
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    if entity == 0 or not DoesEntityExist(entity) then return end
+    if Entity(entity).state.nativeBoomboxId ~= id then return end
+
+    return entity
+end
+
 local function nearestPortable()
     local playerPosition = GetEntityCoords(cache.ped)
-    local bestId, bestEntity, bestDistance
+    local maxDistanceSquared = Config.Audio.distance * Config.Audio.distance
+    local bestId, bestEntity, bestDistanceSquared
+
     for id, box in pairs(boxes) do
         if box.kind == 'placed' and box.powered and box.netId then
-            local entity = NetworkGetEntityFromNetworkId(box.netId)
-            if entity ~= 0 and DoesEntityExist(entity) then
-                local distance = #(playerPosition - GetEntityCoords(entity))
-                if distance <= Config.Audio.distance and (not bestDistance or distance < bestDistance) then
-                    bestId, bestEntity, bestDistance = id, entity, distance
+            local dx = playerPosition.x - box.x
+            local dy = playerPosition.y - box.y
+            local dz = playerPosition.z - box.z
+            local distanceSquared = dx * dx + dy * dy + dz * dz
+
+            if distanceSquared <= maxDistanceSquared
+                and (not bestDistanceSquared or distanceSquared < bestDistanceSquared) then
+                local entity = resolvePortableEntity(id, box.netId)
+                if entity then
+                    bestId = id
+                    bestEntity = entity
+                    bestDistanceSquared = distanceSquared
                 end
             end
         end
     end
+
     return bestId, bestEntity
 end
 
