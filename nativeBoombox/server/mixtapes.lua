@@ -367,12 +367,13 @@ local function registerCallbacks()
         local creatorIdentifier = GetPlayerIdentifierByType(source, 'license')
             or GetPlayerIdentifierByType(source, 'license2')
         if not creatorIdentifier then return false, 'Your player identifier could not be resolved.' end
+        local creatorName = GetPlayerName(source) or 'Unknown'
 
         local mixtapeId
         local ok, err = xpcall(function()
             mixtapeId = Database.createMixtape(
                 creatorIdentifier,
-                GetPlayerName(source) or 'Unknown',
+                creatorName,
                 title,
                 capacityMs,
                 durationMs,
@@ -383,6 +384,7 @@ local function registerCallbacks()
             metadata.recorded = true
             metadata.mixtapeId = mixtapeId
             metadata.mixtapeTitle = title
+            metadata.mixtapeCreator = creatorName
             metadata.trackCount = #validated
             metadata.runtimeMs = durationMs
             metadata.capacityMs = capacityMs
