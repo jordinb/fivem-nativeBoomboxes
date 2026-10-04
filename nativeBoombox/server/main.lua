@@ -369,6 +369,8 @@ local function broadcast(box)
     TriggerClientEvent('nativeBoombox:client:upsert', -1, serialize(box))
 end
 
+validateConfig()
+
 Mixtapes.configure({
     boxes = boxes,
     entities = entities,
@@ -380,8 +382,6 @@ Mixtapes.configure({
     rateLimited = rateLimited,
     reportError = reportError
 })
-
-validateConfig()
 
 local function initialise()
     Database.init()
