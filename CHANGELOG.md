@@ -23,6 +23,9 @@
 
 ### Fixed
 
+- Mixtape playback now forces the underlying Rockstar source station into music-only mode, suppressing DJ chatter, adverts, station IDs, and other radio presentation layered around the selected song.
+- Music-only mode is released whenever Mixtape playback stops, switches source stations, returns to normal radio mode, leaves range, or the resource stops, so ordinary GTA radio behavior is restored.
+
 - Added the virtual **Mixtape** channel to the Station/Channel submenu whenever a recorded cassette is inserted.
 - Normal Rockstar stations remain visible but disabled while Mixtape mode is active, making the active channel unambiguous without treating Mixtape as a real Rockstar radio station.
 - The boombox menu can recognize Mixtape mode from the scoped playback state bag during a client state-update race after cassette insertion.
