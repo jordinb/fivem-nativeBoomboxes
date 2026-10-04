@@ -1,4 +1,4 @@
-# nativeBoombox 2.3.0
+# nativeBoombox 2.3.1
 
 A clean rebuild of the persistent FiveM boombox resource using GTA V's native placed-prop radio emitter. It does not create hidden vehicles, play URLs, or use browser audio.
 
@@ -24,6 +24,10 @@ ensure ox_inventory
 ensure ox_target
 ensure nativeBoombox
 ```
+
+### Upgrading from 2.3.0
+
+2.3.1 is a drop-in client hardening update. It requires no SQL or configuration changes. Portable audio now skips out-of-scope network IDs before entity resolution, validates the replicated boombox ID before attaching the emitter, and avoids network lookups for boomboxes outside the configured audio radius.
 
 ### Upgrading from 2.2.1
 
@@ -106,6 +110,8 @@ One target option opens a server-authorized menu. Depending on access, it can co
 - Model targeting uses a replicated state-bag ID, preventing unrelated boombox props from being controlled.
 - Placement uses no cursor mode, NUI focus, commands, or permanent key mappings.
 - ox_lib menus and dialogs are tracked and closed on resource stop only when nativeBoombox owns them.
+- Portable audio prefilters by synchronized coordinates, verifies that a network ID exists in the local client scope before resolving it, and confirms the replicated boombox ID before attaching the emitter.
+- Reposition fallback resolution uses the same network-scope and state-bag identity checks, preventing stale or reused network IDs from targeting unrelated entities.
 - A failed audio worker stops and reports once. It cannot flood F8 in a retry loop.
 - Server error reporting is rate-limited by failure scope.
 - Placement, pickup, control, rename, reposition, deletion, and recovery emit server audit events.

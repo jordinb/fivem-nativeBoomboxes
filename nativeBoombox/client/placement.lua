@@ -17,6 +17,17 @@ local function deletePreview(entity)
     placing = false
 end
 
+local function resolveNetworkBoombox(id, netId)
+    if type(netId) ~= 'number' or netId <= 0 then return 0 end
+    if not NetworkDoesEntityExistWithNetworkId(netId) then return 0 end
+
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    if entity == 0 or not DoesEntityExist(entity) then return 0 end
+    if Entity(entity).state.nativeBoomboxId ~= id then return 0 end
+
+    return entity
+end
+
 function BeginBoomboxPlacement(slotId)
     if placing then return end
     if type(slotId) ~= 'number' then
@@ -110,8 +121,9 @@ function BeginBoomboxReposition(id, originalEntity)
         return lib.notify({ type = 'error', description = 'The boombox model could not be loaded.' })
     end
 
-    if not originalEntity or not DoesEntityExist(originalEntity) then
-        originalEntity = box.netId and NetworkGetEntityFromNetworkId(box.netId) or 0
+    if not originalEntity or not DoesEntityExist(originalEntity)
+        or Entity(originalEntity).state.nativeBoomboxId ~= id then
+        originalEntity = resolveNetworkBoombox(id, box.netId)
     end
 
     local preview = CreateObjectNoOffset(Config.PropModel, box.x, box.y, box.z, false, false, false)

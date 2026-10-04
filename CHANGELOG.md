@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.1
+
+### Fixed
+
+- Prevented client F8 `GetNetworkObject: no object by ID` warning spam by checking whether a portable boombox network ID exists in the local client scope before resolving it.
+- Guarded reposition fallback entity resolution against out-of-scope, stale, and reused network IDs.
+
+### Changed
+
+- Portable audio now performs a squared-distance prefilter using synchronized boombox coordinates before any network-entity lookup.
+- Resolved portable entities are verified against the replicated `nativeBoomboxId` state value before the native emitter is attached.
+
 ## 2.3.0
 
 ### Added
