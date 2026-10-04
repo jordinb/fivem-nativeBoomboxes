@@ -52,7 +52,7 @@ local function openRadio(id, entity)
         options[#options + 1] = {
             title = box.powered and 'Turn Off' or 'Turn On',
             icon = 'power-off',
-            description = box.powered and 'Stop native radio playback' or 'Start native radio playback',
+            description = box.powered and 'Stop playback' or 'Start playback',
             onSelect = function()
                 local current = boxes[id]
                 if current then
@@ -61,12 +61,35 @@ local function openRadio(id, entity)
             end
         }
         if box.mode == 'mixtape' then
+            local playback = entity and DoesEntityExist(entity)
+                and Entity(entity).state.nativeBoomboxPlayback or nil
+
             options[#options + 1] = {
                 title = 'Station/Channel: Mixtape',
                 icon = 'compact-disc',
                 description = box.mixtapeLabel or 'Recorded Cassette',
                 disabled = true
             }
+
+            if type(playback) == 'table' and playback.finished then
+                options[#options + 1] = {
+                    title = 'End of Mixtape',
+                    icon = 'stop',
+                    description = 'Playback is stopped. Restart the mixtape or eject the cassette.',
+                    disabled = true
+                }
+            elseif type(playback) == 'table' and playback.title then
+                options[#options + 1] = {
+                    title = playback.title,
+                    icon = 'music',
+                    description = ('%s • Track %s/%s'):format(
+                        playback.artist or 'Unknown Artist',
+                        playback.index or '?',
+                        playback.count or '?'
+                    ),
+                    disabled = true
+                }
+            end
             options[#options + 1] = {
                 title = 'Previous Track',
                 icon = 'backward-step',
