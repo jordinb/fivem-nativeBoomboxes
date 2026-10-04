@@ -26,6 +26,8 @@
 - Added the virtual **Mixtape** channel to the Station/Channel submenu whenever a recorded cassette is inserted.
 - Normal Rockstar stations remain visible but disabled while Mixtape mode is active, making the active channel unambiguous without treating Mixtape as a real Rockstar radio station.
 - The boombox menu can recognize Mixtape mode from the scoped playback state bag during a client state-update race after cassette insertion.
+- Cassette insertion/ejection now schedules a direct stash reconciliation from the ox_inventory swap hook instead of depending on the generated post-hook event.
+- Closing a cassette-bay stash triggers a second reconciliation safety net so live boombox state follows the actual inventory contents without a resource restart.
 
 ### Safety
 
