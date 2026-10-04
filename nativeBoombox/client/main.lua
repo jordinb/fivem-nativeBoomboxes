@@ -60,17 +60,53 @@ local function openRadio(id, entity)
                 end
             end
         }
-        if box.mode == 'mixtape' then
-            local playback = entity and DoesEntityExist(entity)
-                and Entity(entity).state.nativeBoomboxPlayback or nil
+        local playback = entity and DoesEntityExist(entity)
+            and Entity(entity).state.nativeBoomboxPlayback or nil
+        local mixtapeMode = box.mode == 'mixtape'
+            or type(playback) == 'table' and playback.mode == 'mixtape'
 
-            options[#options + 1] = {
-                title = 'Station/Channel: Mixtape',
-                icon = 'compact-disc',
-                description = box.mixtapeLabel or 'Recorded Cassette',
+        options[#options + 1] = {
+            title = 'Station/Channel',
+            icon = mixtapeMode and 'compact-disc' or 'radio',
+            description = mixtapeMode and 'Mixtape' or (StationLookup[box.station] or box.station),
+            menu = stationContextId
+        }
+
+        local stationOptions = {}
+
+        if mixtapeMode then
+            stationOptions[#stationOptions + 1] = {
+                title = 'Mixtape',
+                icon = 'circle-check',
+                description = box.mixtapeLabel or playback and playback.label or 'Recorded Cassette',
                 disabled = true
             }
+        end
 
+        for i = 1, #Stations do
+            local station = Stations[i]
+            local stationValue = station.value
+            local selected = not mixtapeMode and box.station == stationValue
+
+            stationOptions[#stationOptions + 1] = {
+                title = station.label,
+                icon = selected and 'circle-check' or 'radio',
+                description = mixtapeMode and 'Eject the cassette to select this station.' or nil,
+                disabled = mixtapeMode or selected,
+                onSelect = function()
+                    TriggerServerEvent('nativeBoombox:server:setState', id, 'station', stationValue)
+                end
+            }
+        end
+
+        lib.registerContext({
+            id = stationContextId,
+            title = 'Select Station/Channel',
+            menu = contextId,
+            options = stationOptions
+        })
+
+        if mixtapeMode then
             if type(playback) == 'table' and playback.finished then
                 options[#options + 1] = {
                     title = 'End of Mixtape',
@@ -90,6 +126,7 @@ local function openRadio(id, entity)
                     disabled = true
                 }
             end
+
             options[#options + 1] = {
                 title = 'Previous Track',
                 icon = 'backward-step',
@@ -114,40 +151,14 @@ local function openRadio(id, entity)
                     TriggerServerEvent('nativeBoombox:server:mixtapeControl', id, 'restart')
                 end
             }
-        else
-            options[#options + 1] = {
-                title = 'Station/Channel',
-                icon = 'radio',
-                description = StationLookup[box.station] or box.station,
-                menu = stationContextId
-            }
-            local stationOptions = {}
-            for i = 1, #Stations do
-                local station = Stations[i]
-                local stationValue = station.value
-                stationOptions[#stationOptions + 1] = {
-                    title = station.label,
-                    icon = box.station == stationValue and 'circle-check' or 'radio',
-                    disabled = box.station == stationValue,
-                    onSelect = function()
-                        TriggerServerEvent('nativeBoombox:server:setState', id, 'station', stationValue)
-                    end
-                }
-            end
-            lib.registerContext({
-                id = stationContextId,
-                title = 'Select Station',
-                menu = contextId,
-                options = stationOptions
-            })
         end
 
         if Config.Mixtapes.enabled and box.kind == 'placed' then
             options[#options + 1] = {
                 title = 'Cassette Bay',
                 icon = 'compact-disc',
-                description = box.mode == 'mixtape'
-                    and ('Inserted: %s'):format(box.mixtapeLabel or 'Mixtape')
+                description = mixtapeMode
+                    and ('Inserted: %s'):format(box.mixtapeLabel or playback and playback.label or 'Mixtape')
                     or 'Insert a recorded mixtape',
                 onSelect = function() OpenBoomboxCassetteBay(id) end
             }
