@@ -143,6 +143,23 @@ local function validateConfig()
         problems[#problems + 1] = 'Config.Audit.print must be a boolean'
     end
 
+    if type(Config.Mixtapes) ~= 'table' then
+        problems[#problems + 1] = 'Config.Mixtapes must be a table'
+    else
+        if type(Config.Mixtapes.enabled) ~= 'boolean' then
+            problems[#problems + 1] = 'Config.Mixtapes.enabled must be a boolean'
+        end
+        if type(Config.Mixtapes.itemName) ~= 'string' or Config.Mixtapes.itemName == '' then
+            problems[#problems + 1] = 'Config.Mixtapes.itemName must be a non-empty string'
+        end
+        requireNumber(Config.Mixtapes.capacityMs, 'Config.Mixtapes.capacityMs', 1000)
+        requireNumber(Config.Mixtapes.maximumTracks, 'Config.Mixtapes.maximumTracks', 1)
+        requireNumber(Config.Mixtapes.titleMaximumLength, 'Config.Mixtapes.titleMaximumLength', 1)
+        requireNumber(Config.Mixtapes.cassetteBayMaxWeight, 'Config.Mixtapes.cassetteBayMaxWeight', 1)
+        requireNumber(Config.Mixtapes.advanceInterval, 'Config.Mixtapes.advanceInterval', 100)
+        requireNumber(Config.Mixtapes.syncInterval, 'Config.Mixtapes.syncInterval', 1000)
+    end
+
     if type(Config.StationFilter) ~= 'table' or type(Config.StationFilter.allow) ~= 'table'
         or type(Config.StationFilter.block) ~= 'table' then
         problems[#problems + 1] = 'Config.StationFilter.allow and .block must be tables'
@@ -218,6 +235,9 @@ local function serialize(box)
         rot_x = box.rot_x, rot_y = box.rot_y, rot_z = box.rot_z,
         station = box.station,
         powered = box.powered == true or box.powered == 1,
+        mode = box.mode or 'radio',
+        mixtapeId = box.mixtapeId,
+        mixtapeLabel = box.mixtapeLabel,
         emitter = box.emitter,
         label = box.label,
         controllable = box.controllable
@@ -335,6 +355,7 @@ local function spawn(box)
     entities[box.id] = entity
     SetEntityOrphanMode(entity, 2)
     Entity(entity).state:set('nativeBoomboxId', box.id, true)
+    if Mixtapes then Mixtapes.syncBoxEntity(box) end
     return true
 end
 
@@ -347,6 +368,18 @@ end
 local function broadcast(box)
     TriggerClientEvent('nativeBoombox:client:upsert', -1, serialize(box))
 end
+
+Mixtapes.configure({
+    boxes = boxes,
+    entities = entities,
+    ready = function() return ready end,
+    broadcast = broadcast,
+    isNear = isNear,
+    canPerform = canPerform,
+    audit = audit,
+    rateLimited = rateLimited,
+    reportError = reportError
+})
 
 validateConfig()
 
@@ -366,6 +399,8 @@ local function initialise()
         end
         boxes[box.id] = box
         spawn(box)
+        Mixtapes.registerBox(box)
+        Mixtapes.refreshBox(box, true)
     end
 
     for i = 1, #Config.WorldRadios do
@@ -425,6 +460,9 @@ lib.callback.register('nativeBoombox:server:getAccess', function(source, id)
             x = box.x, y = box.y, z = box.z,
             rot_x = box.rot_x, rot_y = box.rot_y, rot_z = box.rot_z,
             station = box.station,
+            mode = box.mode or 'radio',
+            mixtapeId = box.mixtapeId,
+            mixtapeLabel = box.mixtapeLabel,
             powered = box.powered,
             netId = box.netId
         }
@@ -518,6 +556,7 @@ lib.callback.register('nativeBoombox:server:finishReposition', function(source, 
             SetEntityRotation(entity, box.rot_x, box.rot_y, box.rot_z, 2, true)
             FreezeEntityPosition(entity, true)
         end
+        Mixtapes.registerBox(box)
     end, debug.traceback)
 
     editLocks[id] = nil
@@ -560,6 +599,7 @@ RegisterNetEvent('nativeBoombox:server:rename', function(id, value)
         box.label = label
         changedBox = box
         Database.updateLabel(box)
+        Mixtapes.registerBox(box)
     end, debug.traceback)
 
     if not ok and changedBox then changedBox.label = previousLabel end
@@ -585,6 +625,13 @@ RegisterNetEvent('nativeBoombox:server:adminDelete', function(id)
     local ok, err = xpcall(function()
         local box = boxes[id]
         if not box or not isNear(source, box, Config.InteractDistance + 1.0) then return end
+        if Mixtapes.hasCassette(box) then
+            TriggerClientEvent('ox_lib:notify', source, {
+                type = 'error',
+                description = 'Eject the mixtape before deleting this boombox.'
+            })
+            return
+        end
         if not Database.delete(id) then return end
         deletedBox = box
         editLocks[id] = nil
@@ -654,6 +701,8 @@ RegisterNetEvent('nativeBoombox:server:place', function(position, rotation, slot
         }
         boxes[id] = box
         local spawned = spawn(box)
+        Mixtapes.registerBox(box)
+        Mixtapes.refreshBox(box, true)
         broadcast(box)
         if not spawned then
             TriggerClientEvent('ox_lib:notify', source, {
@@ -699,14 +748,18 @@ RegisterNetEvent('nativeBoombox:server:setState', function(id, action, value)
         previousPower = box.powered
         if action == 'power' and type(value) == 'boolean' then
             box.powered = value
-        elseif action == 'station' and type(value) == 'string' and StationLookup[value] then
+        elseif action == 'station' and box.mode ~= 'mixtape'
+            and type(value) == 'string' and StationLookup[value] then
             box.station = value
         else
             return
         end
 
         changedBox = box
-        if box.kind == 'placed' then Database.updateState(box) end
+        if box.kind == 'placed' then
+            Database.updateState(box)
+            if action == 'power' then Mixtapes.onPowerChanged(box, value) end
+        end
     end, debug.traceback)
 
     if not ok and changedBox then
@@ -741,6 +794,13 @@ RegisterNetEvent('nativeBoombox:server:pickup', function(id)
         if not canPerform(source, 'pickup', box) then
             TriggerClientEvent('ox_lib:notify', source,
                 { type = 'error', description = 'You are not allowed to pick up this boombox.' })
+            return
+        end
+        if Mixtapes.hasCassette(box) then
+            TriggerClientEvent('ox_lib:notify', source, {
+                type = 'error',
+                description = 'Eject the mixtape before picking up this boombox.'
+            })
             return
         end
         if not exports.ox_inventory:CanCarryItem(source, Config.ItemName, 1) then
