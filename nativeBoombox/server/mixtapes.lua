@@ -297,21 +297,36 @@ local function validateCassetteMove(payload)
     end
 end
 
+local pendingRefresh = {}
+
+local function scheduleBoxRefresh(id)
+    id = tonumber(id)
+    if not id or pendingRefresh[id] then return end
+
+    pendingRefresh[id] = true
+    SetTimeout(150, function()
+        pendingRefresh[id] = nil
+        local box = context.boxes[id]
+        if box then Mixtapes.refreshBox(box, false) end
+    end)
+end
+
+local function cassetteMoveHook(payload)
+    local result = validateCassetteMove(payload)
+    local id = parseStashId(payload.toInventory) or parseStashId(payload.fromInventory)
+
+    -- Re-read the actual stash after ox_inventory finishes processing the move.
+    -- This is intentionally derived from inventory truth rather than assuming
+    -- the attempted move succeeded.
+    if id then scheduleBoxRefresh(id) end
+
+    return result
+end
+
 local function registerInventoryHook()
-    hookId = exports.ox_inventory:registerHook('swapItems', validateCassetteMove, {
+    hookId = exports.ox_inventory:registerHook('swapItems', cassetteMoveHook, {
         inventoryFilter = { '^' .. stashPrefix }
     })
-
-    AddEventHandler(hookId, function(success, payload)
-        if not success then return end
-        local id = parseStashId(payload.toInventory) or parseStashId(payload.fromInventory)
-        if not id then return end
-
-        SetTimeout(100, function()
-            local box = context.boxes[id]
-            if box then Mixtapes.refreshBox(box, false) end
-        end)
-    end)
 end
 
 local function registerCallbacks()
